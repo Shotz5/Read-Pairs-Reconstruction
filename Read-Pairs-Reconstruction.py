@@ -1,3 +1,4 @@
+from tracemalloc import start
 from Node import Node
 import numpy as num
 
@@ -77,17 +78,29 @@ def glue_pairs(pairs):
         j = i + 1
 
         while(j < end):
-            #print(str(node_list[i].getPrefix()) + " Compared to " + str(node_list[j].getPrefix()))
             if(node_list[i].getPrefix() == node_list[j].getPrefix()):
                 node_list[i].appendNext(node_list[j].getNext())
+                node_list[j].getPrev()[0].wipeNext()
+                node_list[j].getPrev()[0].addNext(node_list[i])
                 node_list.pop(j)
                 end -= 1
             j += 1
 
     # for node in node_list:
-    #     print("Node: " + str(node))
-    #     for other_node in node.getNext():
-    #         print("Next: " + str(other_node))
+    #     print("Current -> " + str(node), end=" -> ")
+    #     for next in node.getNext():
+    #         print(next, end=" ")
+    #     print()
+
+    # while(start_node):
+    #     print(start_node, end=" -> ")
+    #     for node in start_node.getNext():
+    #         print(node, end=" -> ")
+    #         for node_2 in node.getNext():
+    #             print(node_2)
+    #     print()
+
+    #     start_node = start_node.getNext()[0]
 
     return start_node
 
@@ -99,13 +112,17 @@ def eulerian_path(start_node):
     stack.append(start_node)
     while (len(stack) > 0):
         v = stack[-1]
-        if (v.getNext() == []):
+        if (not v.getNext()):
             answer.append(v)
             stack.pop()
         else:
             w = v.getNext()[0]
-            v.removeNext(w)
             stack.append(w)
+            v.removeNext(w)
+
+    # print()
+    # for node in answer[::-1]:
+    #     print(node)
 
     return answer
 
@@ -136,13 +153,20 @@ def interpret_answer(answer, k, d):
     return dimensional
 
 def flatten_answer(dimensional):
+    print()
     answer = ""
     for i in range(len(dimensional[0])):
         current_char = None
         for j in range(len(dimensional)):
-            if (dimensional[j][i] != " "):
-                current_char = dimensional[j][i]
+            print(dimensional[j][i], end=" ")
+            if (current_char == None):
+                if (dimensional[j][i] != " "):
+                    current_char = dimensional[j][i]
+            else:
+                if (dimensional[j][i] != " " and dimensional[j][i] != current_char):
+                    somethingcool = 0
 
+        print()
         answer += current_char
 
     print(answer)

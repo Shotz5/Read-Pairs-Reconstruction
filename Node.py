@@ -19,6 +19,9 @@ class Node:
     def removeNext(self, node):
         self.next.remove(node)
 
+    def wipeNext(self):
+        self.next = []
+
     def addPrev(self, node):
         self.prev.append(node)
 
