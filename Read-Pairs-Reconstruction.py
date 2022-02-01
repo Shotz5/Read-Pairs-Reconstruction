@@ -4,7 +4,7 @@ import numpy as num
 
 def main():
     # file_input = input("Enter file name: ")
-    file_name = "test5.txt"
+    file_name = "test1.txt"
 
     with open(file_name, "r") as file:
         file_digits = file.readline()
@@ -43,11 +43,10 @@ def make_pairs(pairs):
         suffix = [suffix_1, suffix_2]
         node = Node(prefix, suffix, pair)
         debruijn_pairs.append(node)
-    
+
     return debruijn_pairs
 
 def glue_pairs(pairs):
-    num_verticies = 1
     for node in pairs:
         for other_node in pairs:
             if (other_node != node):
@@ -55,7 +54,7 @@ def glue_pairs(pairs):
                     #Then They are paired!
                     node.addNext(other_node)
                     other_node.addPrev(node)
-                    num_verticies += 1
+                    node.addPair(other_node, node.getPair())
                     break
 
     node_list = []
@@ -66,7 +65,7 @@ def glue_pairs(pairs):
             start_node = node
 
     current_node = start_node
-    while(current_node):
+    while (current_node):
         node_list.append(current_node)
         try:
             current_node = current_node.getNext()[0]
@@ -77,30 +76,16 @@ def glue_pairs(pairs):
     for i in range(len(node_list)):
         j = i + 1
 
-        while(j < end):
+        # TODO: ALMOST DONE WITH THIS, LITTLE MORE TWEAKING, NEED TO FIX 
+        while (j < end):
             if(node_list[i].getPrefix() == node_list[j].getPrefix()):
                 node_list[i].appendNext(node_list[j].getNext())
+                node_list[i].addPairMap(node_list[j].getPairMap())
                 node_list[j].getPrev()[0].wipeNext()
                 node_list[j].getPrev()[0].addNext(node_list[i])
                 node_list.pop(j)
                 end -= 1
             j += 1
-
-    # for node in node_list:
-    #     print("Current -> " + str(node), end=" -> ")
-    #     for next in node.getNext():
-    #         print(next, end=" ")
-    #     print()
-
-    # while(start_node):
-    #     print(start_node, end=" -> ")
-    #     for node in start_node.getNext():
-    #         print(node, end=" -> ")
-    #         for node_2 in node.getNext():
-    #             print(node_2)
-    #     print()
-
-    #     start_node = start_node.getNext()[0]
 
     return start_node
 
@@ -120,18 +105,26 @@ def eulerian_path(start_node):
             stack.append(w)
             v.removeNext(w)
 
-    # print()
-    # for node in answer[::-1]:
-    #     print(node)
-
     return answer
 
 def interpret_answer(answer, k, d):
     dimensional = []
     offset = 0
     extra_spaces = len(answer) - 1
-    for node in answer[::-1]:
-        pair = node.getPair()
+
+    for i in reversed(range(len(answer))):
+        initial = answer[i].getPrefix()
+        map = answer[i].getPairMap()
+        next_pref = answer[i - 1].getPrefix()
+        pair = None
+        if (map):
+            for next in map:
+                if (next.getPrefix() == next_pref):
+                    pair = map.get(next)
+                    break
+        else:
+            pair = answer[i].getPair()
+
         chararray = []
         for i in range(offset):
             chararray.append(" ")
@@ -153,7 +146,6 @@ def interpret_answer(answer, k, d):
     return dimensional
 
 def flatten_answer(dimensional):
-    print()
     answer = ""
     for i in range(len(dimensional[0])):
         current_char = None
@@ -164,7 +156,9 @@ def flatten_answer(dimensional):
                     current_char = dimensional[j][i]
             else:
                 if (dimensional[j][i] != " " and dimensional[j][i] != current_char):
-                    somethingcool = 0
+                    print("An error occured with the alignment in pairs, something went wrong!")
+                    print("Exiting...")
+                    exit()
 
         print()
         answer += current_char

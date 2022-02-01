@@ -2,9 +2,10 @@ class Node:
     def __init__(self, prefix, suffix, pair):
         self.prefix = prefix
         self.suffix = suffix
-        self.pair = pair
         self.next = []
         self.prev = []
+        self.pairMap = dict()
+        self.pair = pair
         self.visited = 0
 
     def __str__(self):
@@ -36,9 +37,21 @@ class Node:
 
     def getSuffix(self):
         return self.suffix
+
+    def addPair(self, node, pair):
+        self.pairMap[node] = pair
+
+    def addPairMap(self, map):
+        self.pairMap.update(map)
     
+    def getPairMap(self):
+        return self.pairMap
+
+    def getPair(self, node):
+        return self.pairMap[node]
+
     def getPair(self):
         return self.pair
-
+        
     def setVisited(self):
         self.visited = 1
