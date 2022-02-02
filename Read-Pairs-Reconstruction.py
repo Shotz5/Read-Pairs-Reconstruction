@@ -1,8 +1,9 @@
+from tracemalloc import start
 from Node import Node
 
 def main():
     # file_input = input("Enter file name: ")
-    file_name = "test4.txt"
+    file_name = "test3.txt"
 
     # File preparation stuff, gets data from file and then parses it to usable variables
     with open(file_name, "r") as file:
@@ -25,11 +26,25 @@ def main():
 
         # Main Driver for application
         debruijin_pairs = make_pairs(file_pairs_splitpairs)
-        start_node = glue_pairs(debruijin_pairs)
-        answer = eulerian_path(start_node)
-        dimensional_answer = interpret_answer(answer, d)
-        flat_answer = flatten_answer(dimensional_answer)
+        graph = glue_pairs(debruijin_pairs)
+
+        i = 0
+        flat_answer = -1
+
+        while(flat_answer == -1):
+            answer = eulerian_cycle(graph, graph[i])
+            dimensional_answer = interpret_answer(answer, d)
+            flat_answer = flatten_answer(dimensional_answer)
+            reset_visited(graph)
+            i += 1
+
         print(flat_answer)
+
+def reset_visited(graph):
+    for i in graph:
+            map = i.getVisitedMap()
+            for j in map:
+                map[j] = 0
 
 def make_pairs(pairs):
     """
@@ -85,75 +100,80 @@ def glue_pairs(pairs):
                     node.addNext(other_node)
                     other_node.addPrev(node)
                     node.addPair(other_node, node.getPair())
+                    node.addVisited(other_node)
                     # Found match, don't need to continue
                     break
 
-    node_list = []
-
-    # Finds the start node (the node that has no previous Node)
     start_node = None
+    end_node = None
+
     for node in pairs:
         if (not node.getPrev()):
             start_node = node
+        if (not node.getNext()):
+            end_node = node
 
-    # Fill up our node_list so we can parse it for similar Nodes, without worrying about breaking next and prev continuity
-    current_node = start_node
-    while (current_node):
-        node_list.append(current_node)
-        try:
-            current_node = current_node.getNext()[0]
-        except:
-            break
+    if (start_node and end_node):
+        end_node.addNext(start_node)
+        end_node.addPair(start_node, end_node.getPair())
+        end_node.addVisited(start_node)
 
     # Iterate through the node list, take the current node and check all occurances after it in the list for matching prefixes
-    end = len(node_list)
-    for i in range(len(node_list)):
+    end = len(pairs)
+    for i in range(len(pairs)):
         j = i + 1
         while (j < end):
             # If we have a match
-            if(node_list[i].getPrefix() == node_list[j].getPrefix()):
+            if(pairs[i].getPrefix() == pairs[j].getPrefix()):
                 # Take all the Nodes the matching node points to, and append them to the current Node
-                node_list[i].appendNext(node_list[j].getNext())
+                pairs[i].appendNext(pairs[j].getNext())
                 # Take the PairMap from the matching Node and append it to the current node
-                node_list[i].addPairMap(node_list[j].getPairMap())
-                # Remove pointers to the matching Node
-                node_list[j].getPrev()[0].wipeNext()
+                pairs[i].addPairMap(pairs[j].getPairMap())
+                pairs[i].addVisitedMap(pairs[j].getVisitedMap())
+
                 # Take the pointers that pointer to the matching Node, and point them to the current Node
-                node_list[j].getPrev()[0].addNext(node_list[i])
+                pairs[j].getPrev()[0].changeNext(pairs[j], pairs[i])
+                pairs[j].getPrev()[0].changeVisited(pairs[j], pairs[i])
+                pairs[j].getPrev()[0].changePairMap(pairs[j], pairs[i])
                 # Remove the matching node from the list
-                node_list.pop(j)
+                pairs.pop(j)
                 end -= 1
             j += 1
 
-    return start_node
+    return pairs
 
-def eulerian_path(start_node):
-    """
-        Calculates Eulerian path of Nodes from the start_node
+def eulerian_cycle(graph, start_vertex):
+    cycle = []
+    cycle_prime = []
+    node_with_extra_edges = [start_vertex]
 
-        Parameters:
+    while (node_with_extra_edges):
+        current_vertex = node_with_extra_edges[0]
+        node_with_extra_edges.remove(current_vertex)
+        flag = 1
+        while(flag):
+            not_visited = []
+            for i in current_vertex.getNext():
+                if (not current_vertex.isVisited(i)):
+                    not_visited.append(i)
+            if (not_visited):
+                current_vertex.setVisited(not_visited[0])
+                cycle_prime.append(current_vertex)
+                current_vertex = not_visited[0]
+            else:
+                flag = 0
 
-            start_node (Node): The beginning Node in the De Bruijn Graph
+        # Stuck, loop to find nodes with unused edges
+        for i in cycle_prime:
+            map = i.getVisitedMap()
+            for j in map:
+                if (map[j] == 0):
+                    node_with_extra_edges.append(j)
+                    break
 
-        Returns:
+        cycle = cycle_prime
 
-            answer: (list[Node]): The ordered list of Nodes to be interpreted
-    """
-    answer = []
-
-    stack = []
-    stack.append(start_node)
-    while (len(stack) > 0):
-        v = stack[-1]
-        if (not v.getNext()):
-            answer.append(v)
-            stack.pop()
-        else:
-            w = v.getNext()[0]
-            stack.append(w)
-            v.removeNext(w)
-
-    return answer
+    return cycle
 
 def interpret_answer(answer, d):
     """
@@ -172,20 +192,21 @@ def interpret_answer(answer, d):
     offset = 0
     extra_spaces = len(answer) - 1
 
-    for i in reversed(range(len(answer))):
+    for i in (range(len(answer))):
         # Get current Node's pairmap
         map = answer[i].getPairMap()
         # Get the next Node's prefix
-        next_pref = answer[i - 1].getPrefix()
+        
         pair = None
         # If the map is populated (not the last object in the de Bruijn graph)
-        if (map):
+        try:
+            next_pref = answer[i + 1]
             # Search the map for the edge's pair
             for next in map:
-                if (next.getPrefix() == next_pref):
+                if (next == next_pref):
                     pair = map.get(next)
                     break
-        else:
+        except:
             # Else we're on the last node, get the last edge
             pair = answer[i].getPair()
 
@@ -233,17 +254,13 @@ def flatten_answer(dimensional):
     for i in range(len(dimensional[0])):
         current_char = None
         for j in range(len(dimensional)):
-            print(dimensional[j][i], end=" ")
             if (current_char == None):
                 if (dimensional[j][i] != " "):
                     current_char = dimensional[j][i]
             else:
                 if (dimensional[j][i] != " " and dimensional[j][i] != current_char):
-                    print("An error occured with the alignment in pairs, something went wrong!")
-                    print("Exiting...")
-                    exit()
+                    return -1
 
-        print()
         answer += current_char
 
     return answer
