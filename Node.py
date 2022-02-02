@@ -2,8 +2,8 @@ class Node:
     def __init__(self, prefix, suffix, pair):
         self.prefix = prefix
         self.suffix = suffix
-        self.next = []
-        self.prev = []
+        self.outEdge = []
+        self.inEdge = []
         self.pairMap = dict()
         self.pair = pair
         self.visited = 0
@@ -11,26 +11,41 @@ class Node:
     def __str__(self):
         return str(self.prefix) + " " + str(self.suffix)
 
-    def addNext(self, node):
-        self.next.append(node)
+    def addOutEdge(self, node):
+        self.outEdge.append(node)
 
-    def appendNext(self, list):
-        self.next.extend(list)
+    def appendOutEdge(self, list):
+        self.outEdge.extend(list)
 
-    def removeNext(self, node):
-        self.next.remove(node)
+    def removeOutEdge(self, edge):
+        self.outEdge.remove(edge)
 
-    def wipeNext(self):
-        self.next = []
+    def addInEdge(self, node):
+        self.inEdge.append(node)
 
-    def addPrev(self, node):
-        self.prev.append(node)
+    def appendInEdge(self, list):
+        self.inEdge.extend(list)
 
-    def getNext(self):
-        return self.next
-    
-    def getPrev(self):
-        return self.prev
+    def removeInEdge(self, edge):
+        self.inEdge.remove(edge)
+
+    def getOutEdge(self):
+        return self.outEdge
+
+    def getInEdge(self):
+        return self.inEdge
+
+    def incrementVisited(self):
+        self.visited += 1
+
+    def getVisited(self):
+        return self.visited
+
+    def setVisited(self):
+        self.visited = 1
+
+    def wipeOutEdges(self):
+        self.outEdge = []
 
     def getPrefix(self):
         return self.prefix
@@ -52,6 +67,3 @@ class Node:
 
     def getPair(self):
         return self.pair
-        
-    def setVisited(self):
-        self.visited = 1

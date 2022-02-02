@@ -1,8 +1,10 @@
+from tracemalloc import start
 from Node import Node
+from Edge import Edge
 
 def main():
     # file_input = input("Enter file name: ")
-    file_name = "test4.txt"
+    file_name = "test5.txt"
 
     # File preparation stuff, gets data from file and then parses it to usable variables
     with open(file_name, "r") as file:
@@ -25,11 +27,11 @@ def main():
 
         # Main Driver for application
         debruijin_pairs = make_pairs(file_pairs_splitpairs)
-        start_node = glue_pairs(debruijin_pairs)
-        answer = eulerian_path(start_node)
-        dimensional_answer = interpret_answer(answer, d)
-        flat_answer = flatten_answer(dimensional_answer)
-        print(flat_answer)
+        node_list = glue_pairs(debruijin_pairs)
+        answer = eulerian_cycle(node_list)
+        # dimensional_answer = interpret_answer(answer, d)
+        # flat_answer = flatten_answer(dimensional_answer)
+        # print(flat_answer)
 
 def make_pairs(pairs):
     """
@@ -76,84 +78,140 @@ def glue_pairs(pairs):
 
             start_node (Node): The first Node in the path
     """
+    node_list = []
+
     # Ties nodes together in one contig strand
     for node in pairs:
         for other_node in pairs:
             if (other_node != node):
-                if (node.getSuffix() == other_node.getPrefix() and not node.getNext() and not other_node.getPrev()):
+                if (node.getPrefix() == other_node.getSuffix() and not node.getOutEdge() and not other_node.getInEdge()):
                     # Then are a match!
-                    node.addNext(other_node)
-                    other_node.addPrev(node)
-                    node.addPair(other_node, node.getPair())
-                    # Found match, don't need to continue
-                    break
+                    new_edge = Edge(node, other_node, node.getPair())
+                    print(new_edge.prev, " ", new_edge.next, " ", new_edge.pair)
+                    node.addOutEdge(new_edge)
+                    other_node.addInEdge(new_edge)
+                    node_list.append(node)
 
-    node_list = []
+    fix_node_list = []
 
-    # Finds the start node (the node that has no previous Node)
-    start_node = None
-    for node in pairs:
-        if (not node.getPrev()):
-            start_node = node
+    # Find start node
+    start_node = node_list[0]
+    while(start_node.getInEdge()):
+        start_node = start_node.getInEdge()[0].prev
 
-    # Fill up our node_list so we can parse it for similar Nodes, without worrying about breaking next and prev continuity
-    current_node = start_node
-    while (current_node):
-        node_list.append(current_node)
-        try:
-            current_node = current_node.getNext()[0]
-        except:
-            break
+    # Find end node
+    end_node = start_node
+    fix_node_list.append(end_node)
+    while (end_node.getOutEdge()):
+        end_node = end_node.getOutEdge()[0].next
+        fix_node_list.append(end_node)
 
+    print(end_node.getInEdge()[0].pair)
+    # Make long path into cycle
+    new_edge = Edge(end_node, start_node, None)
+    end_node.addOutEdge(new_edge)
+    start_node.addInEdge(new_edge)
+    
     # Iterate through the node list, take the current node and check all occurances after it in the list for matching prefixes
-    end = len(node_list)
-    for i in range(len(node_list)):
+    end = len(fix_node_list)
+    for i in range(len(fix_node_list)):
         j = i + 1
         while (j < end):
             # If we have a match
-            if(node_list[i].getPrefix() == node_list[j].getPrefix()):
+            if(fix_node_list[i].getPrefix() == fix_node_list[j].getPrefix()):
                 # Take all the Nodes the matching node points to, and append them to the current Node
-                node_list[i].appendNext(node_list[j].getNext())
-                # Take the PairMap from the matching Node and append it to the current node
-                node_list[i].addPairMap(node_list[j].getPairMap())
+                fix_node_list[i].appendOutEdge(fix_node_list[j].getOutEdge())
                 # Remove pointers to the matching Node
-                node_list[j].getPrev()[0].wipeNext()
+                previous_edge = fix_node_list[j].getInEdge()[0]
+                previous_node = previous_edge.prev
+                previous_pair = previous_edge.pair
+                previous_node.wipeOutEdges()
                 # Take the pointers that pointer to the matching Node, and point them to the current Node
-                node_list[j].getPrev()[0].addNext(node_list[i])
+                new_edge = Edge(previous_node, fix_node_list[i], previous_pair)
+                previous_node.addOutEdge(new_edge)
                 # Remove the matching node from the list
                 node_list.pop(j)
                 end -= 1
             j += 1
+    
+    return fix_node_list
 
-    return start_node
+# def eulerian_path(start_node):
+#     """
+#         Calculates Eulerian path of Nodes from the start_node
 
-def eulerian_path(start_node):
-    """
-        Calculates Eulerian path of Nodes from the start_node
+#         Parameters:
 
-        Parameters:
+#             start_node (Node): The beginning Node in the De Bruijn Graph
 
-            start_node (Node): The beginning Node in the De Bruijn Graph
+#         Returns:
 
-        Returns:
+#             answer: (list[Node]): The ordered list of Nodes to be interpreted
+#     """
+#     answer = []
 
-            answer: (list[Node]): The ordered list of Nodes to be interpreted
-    """
-    answer = []
+#     stack = []
+#     stack.append(start_node)
+#     while (len(stack) > 0):
+#         v = stack[-1]
+#         if (not v.getNext()):
+#             answer.append(v)
+#             stack.pop()
+#         else:
+#             w = v.getNext()[0]
+#             stack.append(w)
+#             v.removeNext(w)
 
-    stack = []
-    stack.append(start_node)
-    while (len(stack) > 0):
-        v = stack[-1]
-        if (not v.getNext()):
-            answer.append(v)
-            stack.pop()
+#     return answer
+
+def eulerian_cycle(graph):
+    cycle = []
+    random_vertex = graph[0]
+    node_with_extra_edges = []
+
+    for all in graph:
+        print(all)
+
+    flag = 1
+    current_vertex = random_vertex
+    while(flag):
+        # print(current_vertex)
+        not_visited = []
+        for i in current_vertex.getOutEdge():
+            if (not i.getVisited()):
+                not_visited.append(i)
+        if (not_visited):
+            not_visited[0].setVisited()
+            cycle.append(not_visited[0].pair)
+            print(not_visited[0], " ", not_visited[0].pair)
+            current_vertex = not_visited[0].next
         else:
-            w = v.getNext()[0]
-            stack.append(w)
-            v.removeNext(w)
+            flag = 0
 
-    return answer
+    # #while cycle is not Eularian
+    # while (node_with_extra_edges):
+
+
+   
+    # while(1):
+    #     print(current_vertex)
+    #     current_vertex.incrementVisited()
+    #     for i in current_vertex.getOutEdge():
+    #         if (not i.visited):
+    #             current_vertex = i.next
+    #             i.setVisited()
+    #             break
+    #     break
+        
+        
+
+    # if (node_with_extra_edges):
+    #     # recurse
+    #     print()
+    # else:
+
+    # print(cycle)
+
 
 def interpret_answer(answer, d):
     """
@@ -233,7 +291,6 @@ def flatten_answer(dimensional):
     for i in range(len(dimensional[0])):
         current_char = None
         for j in range(len(dimensional)):
-            print(dimensional[j][i], end=" ")
             if (current_char == None):
                 if (dimensional[j][i] != " "):
                     current_char = dimensional[j][i]
@@ -242,12 +299,9 @@ def flatten_answer(dimensional):
                     print("An error occured with the alignment in pairs, something went wrong!")
                     print("Exiting...")
                     exit()
-
-        print()
         answer += current_char
 
     return answer
-        
 
 if __name__ == "__main__":
     main()
