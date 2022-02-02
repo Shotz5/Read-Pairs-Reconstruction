@@ -31,8 +31,9 @@ def main():
         i = 0
         flat_answer = -1
 
+        # If our answer is misaligned, we did not use the correct start node, retry from a different node
         while(flat_answer == -1):
-            answer = eulerian_cycle(graph, graph[i])
+            answer = eulerian_cycle(graph[i])
             dimensional_answer = interpret_answer(answer, d)
             flat_answer = flatten_answer(dimensional_answer)
             reset_visited(graph)
@@ -41,6 +42,17 @@ def main():
         print(flat_answer)
 
 def reset_visited(graph):
+    """
+        Resets all the visit flags for nodes supplied in graph 
+
+        Parameters:
+
+            graph (list[Node]): a list of Nodes
+
+        Returns:
+
+            None: Modifies objects directly
+    """
     for i in graph:
             map = i.getVisitedMap()
             for j in map:
@@ -104,6 +116,7 @@ def glue_pairs(pairs):
                     # Found match, don't need to continue
                     break
 
+    # If there's a start and end node, needs to be made into a cycle by pointing the end at the beginning
     start_node = None
     end_node = None
 
@@ -125,13 +138,12 @@ def glue_pairs(pairs):
         while (j < end):
             # If we have a match
             if(pairs[i].getPrefix() == pairs[j].getPrefix()):
-                # Take all the Nodes the matching node points to, and append them to the current Node
+                # Take all the pointers from the Node to be deleted, and append them to the current node
                 pairs[i].appendNext(pairs[j].getNext())
-                # Take the PairMap from the matching Node and append it to the current node
                 pairs[i].addPairMap(pairs[j].getPairMap())
                 pairs[i].addVisitedMap(pairs[j].getVisitedMap())
 
-                # Take the pointers that pointer to the matching Node, and point them to the current Node
+                # Take the pointers that point to the matching Node, and point them to the new current Node
                 pairs[j].getPrev()[0].changeNext(pairs[j], pairs[i])
                 pairs[j].getPrev()[0].changeVisited(pairs[j], pairs[i])
                 pairs[j].getPrev()[0].changePairMap(pairs[j], pairs[i])
@@ -142,15 +154,26 @@ def glue_pairs(pairs):
 
     return pairs
 
-def eulerian_cycle(graph, start_vertex):
+def eulerian_cycle(start_vertex):
+    """
+        Calculates Eulerian cycle of Nodes from the start_node
+
+        Parameters:
+            start_node (Node): The beginning Node in the De Bruijn Graph, can be random in this case
+
+        Returns:
+            answer: (list[Node]): The ordered list of Nodes to be interpreted (could be incorrect if start node was wrong)
+    """
     cycle = []
     cycle_prime = []
     node_with_extra_edges = [start_vertex]
 
+    # While cycle is not Eulerian
     while (node_with_extra_edges):
         current_vertex = node_with_extra_edges[0]
         node_with_extra_edges.remove(current_vertex)
         flag = 1
+        # Form a cycle by randomly walking in balanced graph
         while(flag):
             not_visited = []
             for i in current_vertex.getNext():
@@ -163,7 +186,7 @@ def eulerian_cycle(graph, start_vertex):
             else:
                 flag = 0
 
-        # Stuck, loop to find nodes with unused edges
+        # Stuck, loop to find nodes with unused edges, if none, then we are Eularian
         for i in cycle_prime:
             map = i.getVisitedMap()
             for j in map:
