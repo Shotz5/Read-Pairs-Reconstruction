@@ -5,8 +5,8 @@ class Node:
         self.next = []
         self.prev = []
         self.pairMap = dict()
+        self.visited = dict()
         self.pair = pair
-        self.visited = 0
 
     def __str__(self):
         return str(self.prefix) + " " + str(self.suffix)
@@ -47,11 +47,45 @@ class Node:
     def getPairMap(self):
         return self.pairMap
 
-    def getPair(self, node):
+    def getPairFromMap(self, node):
         return self.pairMap[node]
 
     def getPair(self):
         return self.pair
+
+    def wipePairMap(self):
+        self.pairMap = dict()
+
+    def getVisitedMap(self):
+        return self.visited
+    
+    def addVisited(self, node):
+        self.visited[node] = 0
+
+    def addVisitedMap(self, map):
+        self.visited.update(map)
         
-    def setVisited(self):
-        self.visited = 1
+    def setVisited(self, node):
+        self.visited[node] = 1
+
+    def isVisited(self, node):
+        return self.visited[node]
+
+    def wipeVisited(self):
+        self.visited = dict()
+
+    def changeNext(self, old, new):
+        for i in range(len(self.next)):
+            if (self.next[i] == old):
+                self.next[i] = new
+            else:
+                print("errr")
+
+    def changeVisited(self, old, new):
+        self.visited.pop(old)
+        self.visited[new] = 0
+
+    def changePairMap(self, old, new):
+        key = self.pairMap.pop(old)
+        self.pairMap[new] = key
+    
