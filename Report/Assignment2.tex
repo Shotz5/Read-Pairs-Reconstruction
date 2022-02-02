@@ -1,3 +1,127 @@
+\documentclass{article}
+
+\usepackage[margin=0.75in, headheight=35pt, includehead, includefoot]{geometry}
+
+\usepackage{fancyhdr}
+\usepackage[T1]{fontenc}
+\usepackage[shortlabels]{enumitem}
+\usepackage{graphicx}
+\graphicspath{ {./} }
+\usepackage[export]{adjustbox}
+\usepackage{booktabs}
+\usepackage{forest}
+\usepackage{listings}
+\lstset{escapeinside={(*@}{@*)}}
+
+\setlength{\parindent}{4em}
+\setlength{\parskip}{1em}
+
+\pagestyle{fancy}
+\rhead{Alex Kitsul\\230134210\\February 2, 2021}
+
+\begin{document}
+\thispagestyle{empty}
+\begin{center}
+\topskip0pt
+\vspace*{\fill}
+\Huge Alex Kitsul\\
+\Huge 230134210\\
+\Huge CPSC 450\\
+\Huge Assignment 2 - Report\\
+\Huge February 2\\
+\vspace*{\fill}
+\end{center}
+\pagebreak
+
+\section*{Psedocode}
+\begin{lstlisting}
+main:
+	k <- from file
+	d <- from file
+	pairs <- from file
+	
+	pairs <- debruijin_pairs(pairs)
+	graph <- glue_pairs(pairs)
+	
+	while flat_answer is invalid:
+		answer <- eulerian_cycle(graph[i])
+		dimensional_answer <- interpret_answer(answer, d)
+		flat_answer = flatten_answer(dimensional_answer)
+		reset_answer(graph)
+		i += 1
+		
+	display flatanswer
+	
+reset_visited(graph):
+	for all nodes in graph:
+		for all edges in node:
+			visited = false
+			
+make_pairs(pairs):
+	list of debrujin_pairs
+
+	for every pair in pairs:
+		prefix 1 <- all but the last letter of pair[0]
+		suffix 1 <- all but the first letter of pair[0]
+		
+		prefix 2 <- all but the last letter of pair[1]
+		suffix 2 <- all but the first letter of pair[1]
+		
+		prefix <- prefix 1, prefix 2
+		suffix <- suffix 1, suffix 2
+		
+		node <- prefix, suffix, pair
+		
+		add node to debrujin pairs
+		
+glue_pairs(debruijin_pairs):
+	compare all node prefixes with other node suffixs in debruijin_pairs for matches
+		if there's a match, add an edge
+		
+	find a start and end node if applicable
+	
+	compare all node prefixes to see if there are matches
+		if there are matches:
+			take all pointers from del_node and append to current
+			take all pointers from del_node - 1 and point to current
+			
+eulerian_cycle(start_vertex):
+	*** MODIFIED FROM SLIDES ***
+	form a Cycle by randomly walking from start (avoiding already visited edges)
+	while Cycle is not Eulerian
+		select a node newStart in Cycle with still unexplored outgoing edges   
+		form a Cycle_p by traversing Cycle from newStart and randomly walking afterwards  
+		Cycle <- Cycle_p 
+return Cycle
+
+interpret_answer(answer, d):
+	2D_Array <- []
+
+	for all pairs in answer:
+		find pair from edge
+		chararray <- chararray + offset by number of chararrays (rows)
+		chararray <- chararray + pair[0]
+		chararray <- chararray + offset by d
+		chararray <- chararray + pair[1]
+		chararray <- chararray + offset by spaces until at end column
+		2D_Array append chararray
+		
+flatten_answer(2D_Array):
+	flat_answer
+	for all columns in 2D_Array:
+		if every character in columns is the same:
+			flat_answer <- flat_answer + character
+		else:
+			Answer is misaligned, did not start on the right node
+			return to eularian_cycle
+		
+\end{lstlisting}
+
+\pagebreak
+
+\section*{Program Code}
+\textbf{\underline{Read-Pairs-Reconstruction.py}}
+\begin{lstlisting}
 from Node import Node
 
 def main():
@@ -288,3 +412,108 @@ def flatten_answer(dimensional):
 
 if __name__ == "__main__":
     main()
+
+\end{lstlisting}
+\textbf{\underline{Node.py}}
+\begin{lstlisting}
+class Node:
+    def __init__(self, prefix, suffix, pair):
+        self.prefix = prefix
+        self.suffix = suffix
+        self.next = []
+        self.prev = []
+        self.pairMap = dict()
+        self.visited = dict()
+        self.pair = pair
+
+    def __str__(self):
+        return str(self.prefix) + " " + str(self.suffix)
+
+    def addNext(self, node):
+        self.next.append(node)
+
+    def appendNext(self, list):
+        self.next.extend(list)
+
+    def removeNext(self, node):
+        self.next.remove(node)
+
+    def wipeNext(self):
+        self.next = []
+
+    def addPrev(self, node):
+        self.prev.append(node)
+
+    def getNext(self):
+        return self.next
+    
+    def getPrev(self):
+        return self.prev
+
+    def getPrefix(self):
+        return self.prefix
+
+    def getSuffix(self):
+        return self.suffix
+
+    def addPair(self, node, pair):
+        self.pairMap[node] = pair
+
+    def addPairMap(self, map):
+        self.pairMap.update(map)
+    
+    def getPairMap(self):
+        return self.pairMap
+
+    def getPairFromMap(self, node):
+        return self.pairMap[node]
+
+    def getPair(self):
+        return self.pair
+
+    def wipePairMap(self):
+        self.pairMap = dict()
+
+    def getVisitedMap(self):
+        return self.visited
+    
+    def addVisited(self, node):
+        self.visited[node] = 0
+
+    def addVisitedMap(self, map):
+        self.visited.update(map)
+        
+    def setVisited(self, node):
+        self.visited[node] = 1
+
+    def isVisited(self, node):
+        return self.visited[node]
+
+    def wipeVisited(self):
+        self.visited = dict()
+
+    def changeNext(self, old, new):
+        for i in range(len(self.next)):
+            if (self.next[i] == old):
+                self.next[i] = new
+            else:
+                print("errr")
+
+    def changeVisited(self, old, new):
+        self.visited.pop(old)
+        self.visited[new] = 0
+
+    def changePairMap(self, old, new):
+        key = self.pairMap.pop(old)
+        self.pairMap[new] = key
+    
+\end{lstlisting}
+
+\pagebreak
+
+\section*{Examples with Output}
+\includegraphics[scale=0.5]{ExampleInput1.png}\\
+\includegraphics[scale=0.5]{ExampleInput2.png}\\
+\includegraphics[scale=0.5]{ExampleInput3.png}\\
+
+\end{document}
